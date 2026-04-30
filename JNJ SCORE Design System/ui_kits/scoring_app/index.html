@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>JNJ SCORE 채점 앱 — 와이어프레임</title>
+  <link rel="stylesheet" href="../../colors_and_type.css" />
+  <link rel="stylesheet" href="tokens.css" />
+  <style>
+    body { background: #2A2A2D; margin: 0; min-height: 100vh; font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; }
+    .stage { padding: 40px 20px 60px; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+    .header { color: #fff; text-align: center; max-width: 720px; }
+    .header h1 { font-family: 'Oswald', sans-serif; font-size: 40px; font-weight: 500; letter-spacing: -0.5px; text-transform: uppercase; margin: 0 0 8px; }
+    .header p { color: #9E9EA0; margin: 0; font-size: 14px; line-height: 1.6; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 32px; max-width: 1400px; width: 100%; padding: 0 16px; box-sizing: border-box; }
+    .frame-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .frame-wrap .label { color: #9E9EA0; font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+    .frame-wrap .num { color: #FF8044; font-family: 'Oswald', sans-serif; font-size: 14px; }
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="Screens.jsx"></script>
+  <script type="text/babel">
+    const { useState } = React;
+
+    // 독립적인 미니 앱 인스턴스를 만들기 위한 래퍼
+    function MiniApp({ initialScreen, contest, contestant }) {
+      const [stack, setStack] = useState([{ screen: initialScreen, contest, contestant }]);
+      const top = stack[stack.length - 1];
+      const push = (s) => setStack([...stack, s]);
+      const pop = () => setStack(stack.length > 1 ? stack.slice(0, -1) : stack);
+
+      let content;
+      if (top.screen === 'login')
+        content = <LoginScreen onLogin={() => push({ screen: 'home' })} />;
+      else if (top.screen === 'home')
+        content = <HomeScreen onSelectContest={(c) => push({ screen: 'list', contest: c })} />;
+      else if (top.screen === 'list')
+        content = <ContestantListScreen contest={top.contest} onBack={pop} onSelectContestant={(c) => push({ screen: 'scoring', contestant: c })} />;
+      else if (top.screen === 'scoring')
+        content = <ScoringScreen contestant={top.contestant} onBack={pop} onSubmit={pop} />;
+      else if (top.screen === 'final')
+        content = <FinalScoringScreen contestant={top.contestant} onBack={pop} onSubmit={pop} />;
+
+      const showTab = ['home','list'].includes(top.screen);
+      return (
+        <div style={{ position: 'relative', width: '100%', height: '100%', background: '#0E0E10', overflowY: 'auto' }}>
+          {content}
+          {showTab && <TabBar tab={top.screen === 'list' ? 'list' : 'home'} setTab={() => {}} />}
+        </div>
+      );
+    }
+
+    function App() {
+      const screens = [
+        { num: '00', label: '로그인 — 채점자명', initial: 'login' },
+        { num: '01', label: '홈 / 대회 선택', initial: 'home' },
+        { num: '02', label: '참가자 리스트 (예선)', initial: 'list', contest: { name: '2026 청소년 코딩 챌린지', round: '예선' } },
+        { num: '03', label: '예선/본선 — 통과·탈락', initial: 'scoring', contestant: { name: '이서연', team: '서울 A팀', id: 'A001' } },
+        { num: '04', label: '결승 — 항목별 채점', initial: 'final', contestant: { name: '이서연', team: '서울 A팀', id: 'A001' } },
+      ];
+      return (
+        <div className="stage">
+          <div className="header">
+            <h1>JNJ Score · 채점 앱</h1>
+            <p>대회 채점자용 모바일 앱 와이어프레임. 구글 시트 연동 기반의 예선·본선·결승 채점 흐름.<br/>각 화면은 독립적으로 인터랙션 가능합니다 — 카드 탭, 점수 입력, 통과/탈락 선택을 직접 시도해보세요.</p>
+          </div>
+          <div className="grid">
+            {screens.map((s) => (
+              <div key={s.num} className="frame-wrap">
+                <div className="label"><span className="num">{s.num}</span> · {s.label}</div>
+                <IOSDevice width={360} height={760} dark={true}>
+                  <MiniApp initialScreen={s.initial} contest={s.contest} contestant={s.contestant} />
+                </IOSDevice>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

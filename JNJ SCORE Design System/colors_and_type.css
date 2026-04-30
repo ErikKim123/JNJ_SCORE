@@ -1,0 +1,324 @@
+/* =========================================================================
+   JNJ SCORE — Design Tokens
+   Nike-inspired Podium CDS structure adapted for JNJ SCORE.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---------------------------------------------------------------------
+     COLOR — PRIMARY
+     --------------------------------------------------------------------- */
+  --jnj-black: #111111;            /* primary text, button bg, nav text */
+  --jnj-white: #FFFFFF;            /* canvas, button text on dark */
+
+  /* COLOR — SURFACE & BACKGROUND (grey scale) */
+  --jnj-grey-50:  #FAFAFA;         /* snow */
+  --jnj-grey-100: #F5F5F5;         /* light gray, input fill, skeleton */
+  --jnj-grey-200: #E5E5E5;         /* hover gray, disabled fill */
+  --jnj-grey-300: #CACACB;         /* border secondary */
+  --jnj-grey-400: #9E9EA0;         /* disabled text */
+  --jnj-grey-500: #707072;         /* secondary text, border primary */
+  --jnj-grey-600: #4B4B4D;         /* disabled inverse */
+  --jnj-grey-700: #39393B;         /* dark hover */
+  --jnj-grey-800: #28282A;         /* dark surface */
+  --jnj-grey-900: #1F1F21;         /* deep charcoal, inverse bg */
+
+  /* COLOR — TEXT */
+  --jnj-text-primary:           #111111;
+  --jnj-text-secondary:         #707072;
+  --jnj-text-disabled:          #9E9EA0;
+  --jnj-text-disabled-inverse:  #4B4B4D;
+  --jnj-text-inverse:           #FFFFFF;
+  --jnj-text-badge:             #D33918;
+
+  /* COLOR — BORDER */
+  --jnj-border-primary:    #707072;
+  --jnj-border-secondary:  #CACACB;
+  --jnj-border-disabled:   #CACACB;
+  --jnj-border-active:     #111111;
+
+  /* COLOR — SEMANTIC */
+  --jnj-red:           #D30005;
+  --jnj-red-bright:    #EE0005;
+  --jnj-orange-flash:  #FF5000;
+  --jnj-green:         #007D48;
+  --jnj-green-inverse: #1EAA52;
+  --jnj-blue:          #1151FF;
+  --jnj-blue-inverse:  #1190FF;
+  --jnj-yellow:        #FEDF35;
+  --jnj-focus-ring:    rgba(39, 93, 197, 1);
+
+  /* COLOR — EXTENDED RAMPS (for campaigns / product pages) */
+  --jnj-red-50:  #FFE5E5;  --jnj-red-500:  #EE0005;  --jnj-red-900:  #530300;
+  --jnj-orange-50: #FFE2D6; --jnj-orange-400: #FF5000; --jnj-orange-900: #3E1009;
+  --jnj-yellow-50: #FEF087; --jnj-yellow-500: #FCA600; --jnj-yellow-900: #99470A;
+  --jnj-green-50: #DFFFB9; --jnj-green-500: #1EAA52; --jnj-green-900: #003C2A;
+  --jnj-teal-50:  #D4FFFB; --jnj-teal-500:  #008E98; --jnj-teal-900:  #043441;
+  --jnj-blue-50:  #D6EEFF; --jnj-blue-500:  #1151FF; --jnj-blue-900:  #020664;
+  --jnj-purple-50: #E4E1FC; --jnj-purple-500: #6E0FF6; --jnj-purple-900: #1C0060;
+  --jnj-pink-50:  #FFE1F3; --jnj-pink-500:  #ED1AA0; --jnj-pink-900:  #4C012D;
+
+  /* ---------------------------------------------------------------------
+     TYPE — FAMILIES
+     --------------------------------------------------------------------- */
+  /* Display: Nike Futura ND substitute → Oswald (Google Fonts) */
+  --jnj-font-display: 'Oswald', 'Helvetica Now Text Medium', Helvetica, Arial, sans-serif;
+  /* Body: Helvetica Now substitute → system Helvetica stack */
+  --jnj-font-text:    'Helvetica Now Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --jnj-font-text-medium: 'Helvetica Now Text Medium', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* TYPE — SIZES */
+  --jnj-size-display: 96px;
+  --jnj-size-h1:      32px;
+  --jnj-size-h2:      24px;
+  --jnj-size-h3:      16px;
+  --jnj-size-body:    16px;
+  --jnj-size-link:    16px;
+  --jnj-size-link-sm: 14px;
+  --jnj-size-button:  16px;
+  --jnj-size-btn-sm:  14px;
+  --jnj-size-caption: 14px;
+  --jnj-size-small:   12px;
+
+  /* TYPE — WEIGHTS */
+  --jnj-weight-regular: 400;
+  --jnj-weight-medium:  500;
+  --jnj-weight-bold:    700;
+
+  /* TYPE — LINE HEIGHTS */
+  --jnj-lh-display: 0.90;
+  --jnj-lh-heading: 1.20;
+  --jnj-lh-tight:   1.50;
+  --jnj-lh-body:    1.75;
+  --jnj-lh-link-sm: 1.86;
+
+  /* ---------------------------------------------------------------------
+     SPACING (4px base, 8px grid)
+     --------------------------------------------------------------------- */
+  --jnj-space-1:  4px;
+  --jnj-space-2:  8px;
+  --jnj-space-3:  12px;
+  --jnj-space-4:  16px;
+  --jnj-space-5:  20px;
+  --jnj-space-6:  24px;
+  --jnj-space-7:  32px;
+  --jnj-space-8:  48px;
+  --jnj-space-9:  64px;
+  --jnj-space-10: 80px;
+
+  /* ---------------------------------------------------------------------
+     RADIUS
+     --------------------------------------------------------------------- */
+  --jnj-radius-0:    0px;     /* product images, hero */
+  --jnj-radius-sm:   8px;     /* form inputs */
+  --jnj-radius-md:   18px;    /* small interactive */
+  --jnj-radius-lg:   20px;    /* containers */
+  --jnj-radius-xl:   24px;    /* search, medium pills */
+  --jnj-radius-pill: 30px;    /* buttons, tags, filters */
+  --jnj-radius-full: 9999px;  /* circular */
+
+  /* ---------------------------------------------------------------------
+     ELEVATION (radically flat — only divider + focus)
+     --------------------------------------------------------------------- */
+  --jnj-shadow-flat:    none;
+  --jnj-shadow-divider: 0px -1px 0px 0px #E5E5E5 inset;
+  --jnj-shadow-focus:   0 0 0 2px rgba(39, 93, 197, 1);
+
+  /* TRANSITIONS */
+  --jnj-ease:        cubic-bezier(0.4, 0, 0.2, 1);
+  --jnj-duration:    200ms;
+  --jnj-transition:  all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =========================================================================
+   SEMANTIC TYPE STYLES — apply these as classes for rapid prototyping
+   ========================================================================= */
+
+.jnj-display {
+  font-family: var(--jnj-font-display);
+  font-size: var(--jnj-size-display);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-display);
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--jnj-text-primary);
+}
+
+.jnj-h1 {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-h1);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-heading);
+  color: var(--jnj-text-primary);
+}
+
+.jnj-h2 {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-h2);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-heading);
+  color: var(--jnj-text-primary);
+}
+
+.jnj-h3 {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-h3);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-tight);
+  color: var(--jnj-text-primary);
+}
+
+.jnj-body {
+  font-family: var(--jnj-font-text);
+  font-size: var(--jnj-size-body);
+  font-weight: var(--jnj-weight-regular);
+  line-height: var(--jnj-lh-body);
+  color: var(--jnj-text-primary);
+}
+
+.jnj-body-medium {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-body);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-body);
+  color: var(--jnj-text-primary);
+}
+
+.jnj-link {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-link);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-body);
+  color: var(--jnj-text-primary);
+  text-decoration: none;
+  transition: color var(--jnj-duration) var(--jnj-ease);
+}
+.jnj-link:hover { color: var(--jnj-text-secondary); }
+
+.jnj-link-sm {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-link-sm);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-link-sm);
+  color: var(--jnj-text-primary);
+}
+
+.jnj-caption {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-caption);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-tight);
+  color: var(--jnj-text-secondary);
+}
+
+.jnj-small {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-small);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-tight);
+  color: var(--jnj-text-secondary);
+}
+
+.jnj-tiny {
+  font-family: var(--jnj-font-text);
+  font-size: var(--jnj-size-small);
+  font-weight: var(--jnj-weight-regular);
+  line-height: var(--jnj-lh-tight);
+  color: var(--jnj-text-secondary);
+}
+
+/* =========================================================================
+   BUTTONS
+   ========================================================================= */
+
+.jnj-btn {
+  font-family: var(--jnj-font-text-medium);
+  font-size: var(--jnj-size-button);
+  font-weight: var(--jnj-weight-medium);
+  line-height: var(--jnj-lh-tight);
+  padding: 12px 24px;
+  border-radius: var(--jnj-radius-pill);
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--jnj-duration) var(--jnj-ease),
+              color var(--jnj-duration) var(--jnj-ease),
+              border-color var(--jnj-duration) var(--jnj-ease);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--jnj-space-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.jnj-btn:focus-visible { outline: none; box-shadow: var(--jnj-shadow-focus); }
+
+.jnj-btn-primary {
+  background: var(--jnj-black);
+  color: var(--jnj-white);
+}
+.jnj-btn-primary:hover { background: var(--jnj-grey-500); }
+.jnj-btn-primary:disabled {
+  background: var(--jnj-grey-200);
+  color: var(--jnj-grey-400);
+  cursor: not-allowed;
+}
+
+.jnj-btn-secondary {
+  background: transparent;
+  color: var(--jnj-black);
+  border: 1.5px solid var(--jnj-grey-300);
+}
+.jnj-btn-secondary:hover {
+  border-color: var(--jnj-grey-500);
+  background: var(--jnj-grey-200);
+}
+
+.jnj-btn-inverse {
+  background: var(--jnj-white);
+  color: var(--jnj-black);
+}
+.jnj-btn-inverse:hover { background: var(--jnj-grey-300); }
+
+.jnj-btn-sm { padding: 8px 16px; font-size: var(--jnj-size-btn-sm); }
+
+/* =========================================================================
+   INPUTS
+   ========================================================================= */
+
+.jnj-input {
+  font-family: var(--jnj-font-text);
+  font-size: var(--jnj-size-body);
+  background: var(--jnj-grey-100);
+  border: 1px solid var(--jnj-grey-300);
+  border-radius: var(--jnj-radius-sm);
+  padding: 12px 16px;
+  color: var(--jnj-text-primary);
+  transition: border-color var(--jnj-duration) var(--jnj-ease);
+  width: 100%;
+}
+.jnj-input::placeholder { color: var(--jnj-grey-500); }
+.jnj-input:focus {
+  outline: none;
+  border-color: var(--jnj-border-active);
+  box-shadow: var(--jnj-shadow-focus);
+}
+.jnj-input--search {
+  border-radius: var(--jnj-radius-xl);
+  border-color: transparent;
+}
+.jnj-input--error { border-color: var(--jnj-red); }
+
+/* =========================================================================
+   BASE
+   ========================================================================= */
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: var(--jnj-font-text);
+  color: var(--jnj-text-primary);
+  background: var(--jnj-white);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

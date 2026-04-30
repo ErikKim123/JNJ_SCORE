@@ -1,0 +1,14 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../colors_and_type.css"><style>
+body{padding:24px;background:#FAFAFA;margin:0;display:flex;flex-wrap:wrap;gap:24px;font-family:var(--jnj-font-text-medium)}
+.r{display:flex;flex-direction:column;gap:8px;width:200px}
+.box{height:90px;background:#fff;border-radius:0;display:flex;align-items:center;justify-content:center;color:#707072;font-size:12px}
+.flat{box-shadow:none;border:1px solid transparent}
+.divider{box-shadow:0px -1px 0px 0px #E5E5E5 inset}
+.focus{box-shadow:0 0 0 2px rgba(39, 93, 197, 1)}
+.lbl{font-size:11px;font-weight:500;color:#111}
+.val{font-family:var(--jnj-font-text);font-size:10px;color:#707072}
+</style></head><body>
+<div class="r"><div class="box flat">no shadow</div><div class="lbl">Flat (default)</div><div class="val">all cards, all hovers</div></div>
+<div class="r"><div class="box divider">inset 1px</div><div class="lbl">Divider</div><div class="val">section break only</div></div>
+<div class="r"><div class="box focus">focus ring</div><div class="lbl">Focus</div><div class="val">2px rgba(39,93,197,1)</div></div>
+</body></html>

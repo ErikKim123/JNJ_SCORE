@@ -1,0 +1,27 @@
+/* JNJ SCORE 채점 앱 — 다크 테마 토큰 (참고 이미지 기반) */
+:root {
+  --score-bg:        #0E0E10;
+  --score-surface:   #1A1A1D;
+  --score-surface-2: #232327;
+  --score-border:    #2C2C30;
+  --score-text:      #FFFFFF;
+  --score-text-2:    #9E9EA0;
+  --score-text-3:    #6B6B6E;
+
+  --score-accent:    #FF5000;
+  --score-accent-2:  #FF8044;
+  --score-grad:      linear-gradient(135deg, #FF8044 0%, #FF5000 50%, #B23900 100%);
+  --score-grad-soft: linear-gradient(135deg, #2A1A14 0%, #1A1A1D 100%);
+
+  --score-success:   #1EAA52;
+  --score-fail:      #EE0005;
+  --score-warn:      #FCA600;
+
+  --score-radius-sm: 12px;
+  --score-radius:    20px;
+  --score-radius-lg: 28px;
+  --score-radius-pill: 999px;
+
+  --score-font-display: 'Oswald', 'SF Pro Display', -apple-system, sans-serif;
+  --score-font-text: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+}
