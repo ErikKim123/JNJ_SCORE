@@ -7,14 +7,17 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { JudgeBadge } from '../../components/JudgeBadge';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
+import { NavBar } from '../../components/NavBar';
 import { useCompetition } from '../../hooks/useCompetition';
 import { useJudge } from '../../hooks/useJudge';
 import { AppsScriptError, getEvent } from '../../lib/apps-script';
 import {
   ROUND_LABEL,
+  ROUND_LIFECYCLE_LABEL,
   ROUNDS,
   type Event,
   type Round,
+  type RoundLifecycle,
 } from '../../lib/sheet-schema';
 
 type LoadState =
@@ -69,9 +72,11 @@ export default function EventPage() {
           paddingTop: 'var(--jnj-space-3)',
         }}
       >
-        <span className="jnj-small" style={{ color: 'var(--jnj-text-secondary)' }}>
-          STEP 2 / 3
-        </span>
+        <NavBar
+          loading={state.kind === 'loading'}
+          onRefresh={() => setReloadKey((k) => k + 1)}
+          back="/enter"
+        />
         <JudgeBadge />
       </header>
 
@@ -141,7 +146,7 @@ function EventBody({ event }: { event: Event }) {
             <RoundEntry
               key={round}
               round={round}
-              active={round === event.currentRound}
+              status={event.roundStatus[round]}
             />
           ))}
         </div>
@@ -156,28 +161,55 @@ function EventBody({ event }: { event: Event }) {
   );
 }
 
-function RoundEntry({ round, active }: { round: Round; active: boolean }) {
-  return (
-    <Link
-      href={`/round/${round}`}
-      className={active ? 'jnj-btn jnj-btn-primary' : 'jnj-btn jnj-btn-secondary'}
-      style={{
-        width: '100%',
-        padding: 'var(--jnj-space-4) var(--jnj-space-6)',
-        justifyContent: 'space-between',
-      }}
-    >
+function RoundEntry({ round, status }: { round: Round; status: RoundLifecycle }) {
+  const label = ROUND_LIFECYCLE_LABEL[status];
+  // close 상태는 시트에서 라운드를 종료(잠금) 처리한 의미이므로 진입을 막는다.
+  const disabled = status === 'close';
+  const variant =
+    status === 'live'
+      ? 'jnj-btn jnj-btn-primary'
+      : status === 'open'
+        ? 'jnj-btn jnj-btn-secondary'
+        : 'jnj-btn jnj-btn-secondary';
+  const sharedStyle: React.CSSProperties = {
+    width: '100%',
+    padding: 'var(--jnj-space-4) var(--jnj-space-6)',
+    justifyContent: 'space-between',
+    opacity: disabled ? 0.45 : 1,
+    cursor: disabled ? 'not-allowed' : undefined,
+  };
+  const inner = (
+    <>
       <span style={{ letterSpacing: '0.08em' }}>{ROUND_LABEL[round]}</span>
       <span
         style={{
           fontFamily: 'var(--jnj-font-text)',
           fontWeight: 400,
           fontSize: 'var(--jnj-size-small)',
-          opacity: active ? 1 : 0.7,
+          opacity: status === 'live' ? 1 : 0.75,
         }}
       >
-        {active ? 'Live' : 'Open'}
+        {label}
       </span>
+    </>
+  );
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        className={variant}
+        style={sharedStyle}
+        disabled
+        aria-disabled="true"
+        title="시트에서 종료(Close) 처리된 라운드입니다."
+      >
+        {inner}
+      </button>
+    );
+  }
+  return (
+    <Link href={`/round/${round}`} className={variant} style={sharedStyle}>
+      {inner}
     </Link>
   );
 }

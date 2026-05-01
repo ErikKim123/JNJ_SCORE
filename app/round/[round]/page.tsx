@@ -4,11 +4,11 @@
 
 'use client';
 
-import { notFound, useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { notFound, useParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { JudgeBadge } from '../../../components/JudgeBadge';
 import { LoadingSkeleton } from '../../../components/LoadingSkeleton';
-import { RefreshButton } from '../../../components/RefreshButton';
+import { NavBar } from '../../../components/NavBar';
 import {
   PassFailToggle,
   type RowStatus,
@@ -20,18 +20,22 @@ import { useDraft } from '../../../hooks/useDraft';
 import { useJudge } from '../../../hooks/useJudge';
 import {
   AppsScriptError,
+  getEvent,
   getRound,
   submitRound,
 } from '../../../lib/apps-script';
 import {
+  FINAL_SCORE_DEFAULT,
   FINAL_SCORE_MAX,
   ROUND_LABEL,
+  ROUND_LIFECYCLE_LABEL,
   ROUND_STATUS_LABEL,
   ROUNDS,
   type Contestant,
   type FinalEntry,
   type PassFailEntry,
   type Round,
+  type RoundLifecycle,
   type RoundStatus,
   totalFinalScore,
 } from '../../../lib/sheet-schema';
@@ -48,7 +52,6 @@ type SubmitState =
 
 export default function RoundPage() {
   const params = useParams<{ round: string }>();
-  const router = useRouter();
   const round = params.round as Round;
 
   if (!ROUNDS.includes(round)) notFound();
@@ -58,15 +61,23 @@ export default function RoundPage() {
     requireSelection: true,
   });
   const [loaded, setLoaded] = useState<Loaded>({ kind: 'loading' });
+  // 시트의 `1.대회정보` 라운드별 대회 상태. 'open'으로 낙관적 시작 — 실패해도
+  // 채점 페이지가 막히지 않도록 한다(시트 일시적 장애 시 운영 지속).
+  const [lifecycle, setLifecycle] = useState<RoundLifecycle>('open');
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!hydrated || !compHydrated || !judge) return;
     let cancelled = false;
     setLoaded({ kind: 'loading' });
-    getRound(round, competition?.masterFileId, judge?.id)
-      .then((cs) => {
+    Promise.all([
+      getRound(round, competition?.masterFileId, judge?.id),
+      // 라운드 상태도 함께 갱신해, 운영자가 시트에서 'Close'로 바꾸면 즉시 반영.
+      getEvent(competition?.masterFileId).catch(() => null),
+    ])
+      .then(([cs, ev]) => {
         if (cancelled) return;
+        if (ev) setLifecycle(ev.roundStatus[round]);
         setLoaded({ kind: 'ready', contestants: cs });
       })
       .catch((err: unknown) => {
@@ -98,77 +109,26 @@ export default function RoundPage() {
           gap: 'var(--jnj-space-3)',
         }}
       >
-        <button
-          type="button"
-          onClick={() => router.push('/event')}
-          style={{
-            appearance: 'none',
-            background: 'transparent',
-            border: 'none',
-            padding: 0,
-            color: 'var(--jnj-text-secondary)',
-            fontFamily: 'var(--jnj-font-text-medium)',
-            fontSize: 'var(--jnj-size-link-sm)',
-            cursor: 'pointer',
-          }}
-        >
-          ← Back
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--jnj-space-2)' }}>
-          <RefreshButton
-            loading={loaded.kind === 'loading'}
-            onClick={() => {
-              // Discard local draft so the refresh re-seeds VOTE state from
-              // the sheet (O → ON / X → OFF for the logged-in judge).
-              if (judge && (round === 'prelim' || round === 'semi')) {
-                try {
-                  window.localStorage.removeItem(
-                    `jnj.draft.${round}.${judge.id}`,
-                  );
-                } catch {
-                  // ignore — quota / disabled storage
-                }
-              } else if (judge && round === 'final') {
-                try {
-                  window.localStorage.removeItem(
-                    `jnj.draft.final.${judge.id}`,
-                  );
-                } catch {
-                  // ignore
-                }
+        <NavBar
+          loading={loaded.kind === 'loading'}
+          back="/event"
+          onRefresh={() => {
+            // 갱신 = 시트가 진실의 원천. 시트의 본인(심사위원) O/X 값을 다시
+            // 읽어 VOTE ON/OFF 토글에 반영해야 하므로 localStorage draft 를
+            // 먼저 비운다. (draft 가 남아있으면 useDraft 가 시트 outcome 시드를
+            // 덮어써 이전에 화면에서 누른 값이 그대로 보인다.)
+            if (judge) {
+              try {
+                window.localStorage.removeItem(`jnj.draft.${round}.${judge.id}`);
+              } catch {
+                // 무시 — quota / disabled storage
               }
-              setReloadKey((k) => k + 1);
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => router.push('/competitions')}
-            aria-label="대회 목록으로 이동"
-            style={{
-              appearance: 'none',
-              cursor: 'pointer',
-              background: 'transparent',
-              borderWidth: 1,
-              borderStyle: 'solid',
-              borderColor: 'var(--jnj-grey-300)',
-              borderRadius: 'var(--jnj-radius-pill)',
-              padding: 'var(--jnj-space-1) var(--jnj-space-3)',
-              fontFamily: 'var(--jnj-font-text-medium)',
-              fontSize: 'var(--jnj-size-link-sm)',
-              color: 'var(--jnj-text-primary)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              transition: 'var(--jnj-transition)',
-            }}
-          >
-            <span aria-hidden style={{ fontSize: 14, lineHeight: 1 }}>
-              ☰
-            </span>
-            대회목록
-          </button>
-          <JudgeBadge />
-        </div>
+            }
+            // 제출 잠금/수정 상태도 초기화하기 위해 reloadKey 증가 → 본문 재마운트.
+            setReloadKey((k) => k + 1);
+          }}
+        />
+        <JudgeBadge />
       </header>
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 'var(--jnj-space-2)' }}>
@@ -201,16 +161,52 @@ export default function RoundPage() {
         />
       )}
       {loaded.kind === 'ready' && judge && (
-        <RoundBody
-          round={round}
-          contestants={loaded.contestants}
-          judgeId={judge.id}
-          sheetId={competition?.masterFileId}
-          maxPrelimVotes={judge.maxPrelimVotes}
-          maxSemiVotes={judge.maxSemiVotes}
-        />
+        <>
+          {lifecycle !== 'live' && <LifecycleBanner round={round} lifecycle={lifecycle} />}
+          <RoundBody
+            // 갱신(reloadKey 증가) 시 본문을 강제 재마운트해, useDraft 가
+            // 비워진 localStorage 대신 시트 outcome 으로 깨끗이 시드되도록 한다.
+            key={`${round}-${reloadKey}`}
+            round={round}
+            contestants={loaded.contestants}
+            judgeId={judge.id}
+            sheetId={competition?.masterFileId}
+            maxPrelimVotes={judge.maxPrelimVotes}
+            maxSemiVotes={judge.maxSemiVotes}
+            lifecycle={lifecycle}
+          />
+        </>
       )}
     </main>
+  );
+}
+
+function LifecycleBanner({
+  round,
+  lifecycle,
+}: {
+  round: Round;
+  lifecycle: RoundLifecycle;
+}) {
+  const closed = lifecycle === 'close';
+  const message = closed
+    ? `${ROUND_LABEL[round]} 라운드가 종료(${ROUND_LIFECYCLE_LABEL[lifecycle]})되어 입력/반영이 비활성화됩니다.`
+    : `${ROUND_LABEL[round]} 라운드가 아직 시작 전(${ROUND_LIFECYCLE_LABEL[lifecycle]})입니다. 운영자가 시트에서 'Live'로 변경하면 갱신 후 입력하세요.`;
+  return (
+    <div
+      role="status"
+      style={{
+        padding: 'var(--jnj-space-3) var(--jnj-space-4)',
+        borderRadius: 'var(--jnj-radius-md)',
+        border: `1px solid ${closed ? 'var(--jnj-red)' : 'var(--jnj-grey-300)'}`,
+        background: closed ? 'var(--jnj-red-50)' : 'var(--jnj-grey-50)',
+        color: closed ? 'var(--jnj-red)' : 'var(--jnj-text-primary)',
+        fontFamily: 'var(--jnj-font-text-medium)',
+        fontSize: 'var(--jnj-size-small)',
+      }}
+    >
+      {message}
+    </div>
   );
 }
 
@@ -221,6 +217,7 @@ function RoundBody({
   sheetId,
   maxPrelimVotes,
   maxSemiVotes,
+  lifecycle,
 }: {
   round: Round;
   contestants: Contestant[];
@@ -228,6 +225,7 @@ function RoundBody({
   sheetId?: string;
   maxPrelimVotes?: number;
   maxSemiVotes?: number;
+  lifecycle: RoundLifecycle;
 }) {
   const toastApi = useToasts();
   if (round === 'final') {
@@ -236,6 +234,7 @@ function RoundBody({
         contestants={contestants}
         judgeId={judgeId}
         sheetId={sheetId}
+        lifecycle={lifecycle}
         {...toastApi}
       />
     );
@@ -248,6 +247,7 @@ function RoundBody({
       judgeId={judgeId}
       sheetId={sheetId}
       maxVotes={maxVotes}
+      lifecycle={lifecycle}
       {...toastApi}
     />
   );
@@ -268,6 +268,7 @@ function PassFailBody({
   judgeId,
   sheetId,
   maxVotes,
+  lifecycle,
   toasts,
   push,
   dismiss,
@@ -277,10 +278,12 @@ function PassFailBody({
   judgeId: string;
   sheetId?: string;
   maxVotes?: number;
+  lifecycle: RoundLifecycle;
   toasts: ReturnType<typeof useToasts>['toasts'];
   push: ReturnType<typeof useToasts>['push'];
   dismiss: ReturnType<typeof useToasts>['dismiss'];
 }) {
+  const closed = lifecycle === 'close';
   const draftKey = `jnj.draft.${round}.${judgeId}`;
   const initial: PassFailDraft = useMemo(() => {
     const o: PassFailDraft = {};
@@ -351,6 +354,10 @@ function PassFailBody({
   }
 
   function handleSubmit() {
+    if (closed) {
+      push('error', '시트의 대회 상태가 종료(Close)로 설정되어 반영할 수 없습니다.');
+      return;
+    }
     const entries: (PassFailEntry & { pass: boolean })[] = [];
     for (const c of votableContestants) {
       const val = draft[c.id] ?? 'fail';
@@ -479,6 +486,7 @@ function PassFailBody({
                 disabled={
                   isAbsent ||
                   submitting ||
+                  closed ||
                   // Once cap reached, freeze rows that are still OFF so judge
                   // can only flip OFF on already-ON rows to free up budget.
                   (capExhausted && draft[c.id] !== 'pass')
@@ -492,14 +500,16 @@ function PassFailBody({
 
       <SubmitFooter
         primaryLabel={
-          submitting
-            ? 'Saving…'
-            : locked
-              ? 'Saved'
-              : `반영 (VOTE ON ${voteOnCount}/${total})`
+          closed
+            ? `반영 불가 (${ROUND_LIFECYCLE_LABEL[lifecycle]})`
+            : submitting
+              ? 'Saving…'
+              : locked
+                ? 'Saved'
+                : `반영 (VOTE ON ${voteOnCount}/${total})`
         }
-        onPrimary={locked ? undefined : handleSubmit}
-        disabled={submitting || locked}
+        onPrimary={locked || closed ? undefined : handleSubmit}
+        disabled={submitting || locked || closed}
         secondary={
           locked
             ? { label: '수정', onClick: () => setSubmitState({ kind: 'idle' }) }
@@ -525,6 +535,7 @@ function FinalBody({
   contestants,
   judgeId,
   sheetId,
+  lifecycle,
   toasts,
   push,
   dismiss,
@@ -532,37 +543,57 @@ function FinalBody({
   contestants: Contestant[];
   judgeId: string;
   sheetId?: string;
+  lifecycle: RoundLifecycle;
   toasts: ReturnType<typeof useToasts>['toasts'];
   push: ReturnType<typeof useToasts>['push'];
   dismiss: ReturnType<typeof useToasts>['dismiss'];
 }) {
+  const closed = lifecycle === 'close';
   const [submitState, setSubmitState] = useState<SubmitState>({ kind: 'idle' });
   const draftKey = `jnj.draft.final.${judgeId}`;
-  const initial: FinalDraft = useMemo(() => {
+
+  // 결승은 useDraft 를 사용하지 않는다 — useDraft 의 mount 후 hydrate 가
+  // localStorage 의 이전 값(예: 5점) 으로 시트 시드를 덮어쓰는 race condition
+  // 때문이다. 결승은 시트가 진실의 원천이므로 contestants(시트 응답) 기반으로
+  // 직접 state 를 시드하고, 사용자 입력은 별도 effect 로 localStorage 에 백업.
+  function seedFromContestants(list: Contestant[]): FinalDraft {
     const o: FinalDraft = {};
-    for (const c of contestants) {
-      o[c.id] = { basics: null, connection: null, musicality: null };
+    for (const c of list) {
+      const fs = c.finalScores;
+      o[c.id] = {
+        basics: fs?.basics ?? FINAL_SCORE_DEFAULT,
+        connection: fs?.connection ?? FINAL_SCORE_DEFAULT,
+        musicality: fs?.musicality ?? FINAL_SCORE_DEFAULT,
+      };
     }
     return o;
-  }, [contestants]);
-  const { value: draft, setValue: setDraft, clear } = useDraft<FinalDraft>(
-    draftKey,
-    initial,
+  }
+  const [draft, setDraft] = useState<FinalDraft>(() =>
+    seedFromContestants(contestants),
   );
-
+  // contestants 가 새로 들어오면(=API 재조회 = 갱신 버튼) 무조건 시트값으로 reseed.
+  const lastContestantsRef = useRef(contestants);
   useEffect(() => {
-    setDraft((cur) => {
-      const next: FinalDraft = { ...cur };
-      let changed = false;
-      for (const c of contestants) {
-        if (!(c.id in next)) {
-          next[c.id] = { basics: null, connection: null, musicality: null };
-          changed = true;
-        }
-      }
-      return changed ? next : cur;
-    });
-  }, [contestants, setDraft]);
+    if (lastContestantsRef.current !== contestants) {
+      lastContestantsRef.current = contestants;
+      setDraft(seedFromContestants(contestants));
+    }
+  }, [contestants]);
+  // draft 변경 시 localStorage 에 백업(네트워크 오류 복구용).
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify(draft));
+    } catch {
+      // ignore
+    }
+  }, [draft, draftKey]);
+  function clear() {
+    try {
+      window.localStorage.removeItem(draftKey);
+    } catch {
+      // ignore
+    }
+  }
 
   const validCount = useMemo(
     () =>
@@ -583,6 +614,10 @@ function FinalBody({
   const allValid = validCount === total && total > 0;
 
   function handleSubmit() {
+    if (closed) {
+      push('error', '시트의 대회 상태가 종료(Close)로 설정되어 반영할 수 없습니다.');
+      return;
+    }
     const entries: FinalEntry[] = [];
     for (const c of contestants) {
       const e = draft[c.id];
@@ -633,9 +668,9 @@ function FinalBody({
         {contestants.map((c) => {
           const entry =
             draft[c.id] ?? {
-              basics: null,
-              connection: null,
-              musicality: null,
+              basics: FINAL_SCORE_DEFAULT,
+              connection: FINAL_SCORE_DEFAULT,
+              musicality: FINAL_SCORE_DEFAULT,
             };
           const sum = totalFinalScore({
             contestantId: c.id,
@@ -746,7 +781,7 @@ function FinalBody({
                   label="기본기"
                   value={entry.basics}
                   invalid={entry.basics !== null && !isValidScore(entry.basics)}
-                  disabled={locked || submitting}
+                  disabled={locked || submitting || closed}
                   onChange={(n) =>
                     setDraft((cur) => ({
                       ...cur,
@@ -760,7 +795,7 @@ function FinalBody({
                   invalid={
                     entry.connection !== null && !isValidScore(entry.connection)
                   }
-                  disabled={locked || submitting}
+                  disabled={locked || submitting || closed}
                   onChange={(n) =>
                     setDraft((cur) => ({
                       ...cur,
@@ -774,7 +809,7 @@ function FinalBody({
                   invalid={
                     entry.musicality !== null && !isValidScore(entry.musicality)
                   }
-                  disabled={locked || submitting}
+                  disabled={locked || submitting || closed}
                   onChange={(n) =>
                     setDraft((cur) => ({
                       ...cur,
@@ -790,10 +825,16 @@ function FinalBody({
 
       <SubmitFooter
         primaryLabel={
-          submitting ? 'Saving…' : locked ? 'Saved' : `반영 (${validCount}/${total})`
+          closed
+            ? `반영 불가 (${ROUND_LIFECYCLE_LABEL[lifecycle]})`
+            : submitting
+              ? 'Saving…'
+              : locked
+                ? 'Saved'
+                : `반영 (${validCount}/${total})`
         }
-        onPrimary={locked ? undefined : handleSubmit}
-        disabled={submitting || (!allValid && !locked)}
+        onPrimary={locked || closed ? undefined : handleSubmit}
+        disabled={submitting || closed || (!allValid && !locked)}
         secondary={
           locked
             ? { label: '수정', onClick: () => setSubmitState({ kind: 'idle' }) }

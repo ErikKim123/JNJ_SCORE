@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { LoadingSkeleton } from '../../components/LoadingSkeleton';
-import { RefreshButton } from '../../components/RefreshButton';
+import { NavBar } from '../../components/NavBar';
 import { setCompetition } from '../../hooks/useCompetition';
 import type { Competition } from '../../lib/sheet-schema';
 
@@ -70,30 +70,16 @@ export default function CompetitionsPage() {
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-start',
             alignItems: 'center',
             gap: 'var(--jnj-space-2)',
           }}
         >
-          <button
-            type="button"
-            onClick={() => router.push('/')}
-            style={{
-              appearance: 'none',
-              background: 'transparent',
-              border: 'none',
-              padding: 0,
-              color: 'var(--jnj-text-secondary)',
-              fontFamily: 'var(--jnj-font-text-medium)',
-              fontSize: 'var(--jnj-size-link-sm)',
-              cursor: 'pointer',
-            }}
-          >
-            ← Home
-          </button>
-          <RefreshButton
+          <NavBar
             loading={state.kind === 'loading'}
-            onClick={() => setReloadKey((k) => k + 1)}
+            onRefresh={() => setReloadKey((k) => k + 1)}
+            active="competitions"
+            back="/"
           />
         </div>
         <h1

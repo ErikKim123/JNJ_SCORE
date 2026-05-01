@@ -21,11 +21,23 @@ export type Judge = {
   maxSemiVotes?: number;
 };
 
+// `1.대회정보` 시트의 라운드별 "대회 상태" 셀 값.
+// Live = 진행 중, Open = 대기/시작 전, Close = 종료.
+export type RoundLifecycle = 'live' | 'open' | 'close';
+
+export const ROUND_LIFECYCLE_LABEL: Record<RoundLifecycle, string> = {
+  live: 'LIVE',
+  open: 'OPEN',
+  close: 'CLOSED',
+};
+
 export type Event = {
   name: string;
   date: string; // ISO 8601
   venue: string;
   currentRound: Round;
+  // Per-round lifecycle from `1.대회정보` (예선/본선/결승 대회 상태).
+  roundStatus: Record<Round, RoundLifecycle>;
 };
 
 export type Competition = {
@@ -72,6 +84,13 @@ export type Contestant = {
   // Optional prefill: current sheet value parsed for this round.
   // null = empty cell (treated as ready).
   outcome?: RoundStatus | null;
+  // 결승(final) 라운드 — 본인(심사위원) 이 시트에 입력해 둔 3개 점수.
+  // 갱신 시 휠 picker 가 이 값으로 다시 시드되도록 한다. 셀이 비어있으면 null.
+  finalScores?: {
+    basics: number | null;
+    connection: number | null;
+    musicality: number | null;
+  };
 };
 
 export type PassFailEntry = {
@@ -86,10 +105,12 @@ export type FinalEntry = {
   musicality: number;
 };
 
-// Design Ref: §12 Q2 — final score range is assumed 0..10. Adjust here if the
-// operator's sheet uses a different scale; UI inputs read this constant.
-export const FINAL_SCORE_MIN = 0;
+// Design Ref: §12 Q2 — final score range is 1..10 (operator request).
+// UI inputs read these constants; total denominator = MAX * 3.
+export const FINAL_SCORE_MIN = 1;
 export const FINAL_SCORE_MAX = 10;
+// 결승 점수 입력 기본값 — 휠 picker 가 처음 노출될 때의 시드 값.
+export const FINAL_SCORE_DEFAULT = 5;
 
 export type RoundEntry<R extends Round> = R extends 'final'
   ? FinalEntry

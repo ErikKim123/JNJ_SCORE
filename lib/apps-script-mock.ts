@@ -28,6 +28,7 @@ const EVENT: Event = {
   date: '2026-06-20',
   venue: '올림픽공원 SK핸드볼경기장',
   currentRound: 'prelim',
+  roundStatus: { prelim: 'live', semi: 'open', final: 'open' },
 };
 
 const CONTESTANTS: Record<Round, Contestant[]> = {

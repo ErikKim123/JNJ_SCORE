@@ -43,7 +43,7 @@ export default function HomePage() {
         >
           JNJ
           <br />
-          SCORE.
+          VOTE.
         </h1>
         <p
           style={{

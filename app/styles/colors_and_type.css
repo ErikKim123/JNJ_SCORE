@@ -132,6 +132,55 @@
 }
 
 /* =========================================================================
+   DARK MODE — 전체 분위기 다크로 영구 전환.
+   기존 라이트 토큰을 시멘틱 단위로 오버라이드한다. 그레이 스케일은 의미가
+   유지되도록 라이트의 반대 명도(50↔900) 대응으로 매핑.
+   ========================================================================= */
+:root {
+  /* PRIMARY */
+  --jnj-black: #FFFFFF;            /* primary 버튼/강조 배경 — 다크에선 흰색 */
+  --jnj-white: #0A0A0B;            /* canvas 배경 */
+
+  /* SURFACE & BACKGROUND — 라이트의 50↔900 매핑 */
+  --jnj-grey-50:  #18181A;
+  --jnj-grey-100: #1F1F21;
+  --jnj-grey-200: #28282A;
+  --jnj-grey-300: #39393B;
+  --jnj-grey-400: #4B4B4D;
+  --jnj-grey-500: #707072;
+  --jnj-grey-600: #9E9EA0;
+  --jnj-grey-700: #CACACB;
+  --jnj-grey-800: #E5E5E5;
+  --jnj-grey-900: #F5F5F5;
+
+  /* TEXT */
+  --jnj-text-primary:           #F5F5F5;
+  --jnj-text-secondary:         #9E9EA0;
+  --jnj-text-disabled:          #4B4B4D;
+  --jnj-text-disabled-inverse:  #707072;
+  --jnj-text-inverse:           #111111;
+
+  /* BORDER */
+  --jnj-border-primary:    #707072;
+  --jnj-border-secondary:  #39393B;
+  --jnj-border-disabled:   #28282A;
+  --jnj-border-active:     #FFFFFF;
+
+  /* SEMANTIC RAMP (alert 배경을 다크에서 톤다운) */
+  --jnj-red-50:    #3A0A0A;
+  --jnj-orange-50: #3A1A0A;
+  --jnj-yellow-50: #3A2C0A;
+  --jnj-green-50:  #0A2A18;
+  --jnj-teal-50:   #082A2C;
+  --jnj-blue-50:   #0A1638;
+  --jnj-purple-50: #18103C;
+  --jnj-pink-50:   #2E0A20;
+
+  /* ELEVATION */
+  --jnj-shadow-divider: 0px -1px 0px 0px #28282A inset;
+}
+
+/* =========================================================================
    SEMANTIC TYPE STYLES — apply these as classes for rapid prototyping
    ========================================================================= */
 

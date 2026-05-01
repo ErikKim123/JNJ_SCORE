@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'JNJ SCORE',
+  title: 'JNJ VOTE',
   description: '젝앤질 댄스 컴페티션 채점 앱',
 };
 

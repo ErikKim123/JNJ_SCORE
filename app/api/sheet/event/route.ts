@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { Event, Round } from '../../../../lib/sheet-schema';
+import type { Event, Round, RoundLifecycle } from '../../../../lib/sheet-schema';
 import { fetchSheetTab, parseCsvLine } from '../../../../lib/sheet-fetch';
 
 // 대회 001 원본시트 — dev fallback. 운영에서는 클라이언트가 ?sheetId= 로
@@ -52,8 +52,40 @@ function parseEvent(csv: string, values?: unknown[][]): Event | null {
   const dateRaw = map.get('대회 일시') ?? '';
   if (!name || !venue) return null;
   const date = extractIsoDate(dateRaw);
-  const currentRound = parseRound(map.get('현재 라운드')) ?? 'prelim';
-  return { name, date, venue, currentRound };
+  // 라운드별 "대회 상태" — 시트는 두 가지 키 형식을 사용한다:
+  // (a) "예선 대회 상태" / "본선 대회 상태" / "결승 대회 상태"
+  // (b) "예선" / "본선" / "결승"
+  const roundStatus: Record<Round, RoundLifecycle> = {
+    prelim:
+      parseLifecycle(map.get('예선 대회 상태') ?? map.get('예선')) ?? 'open',
+    semi:
+      parseLifecycle(map.get('본선 대회 상태') ?? map.get('본선')) ?? 'open',
+    final:
+      parseLifecycle(map.get('결승 대회 상태') ?? map.get('결승')) ?? 'open',
+  };
+  // 명시적 "현재 라운드" 키가 있으면 우선, 없으면 첫 'live' 라운드를 현재로 본다.
+  const currentRound =
+    parseRound(map.get('현재 라운드')) ?? deriveCurrentRound(roundStatus);
+  return { name, date, venue, currentRound, roundStatus };
+}
+
+function parseLifecycle(text: string | undefined): RoundLifecycle | null {
+  if (!text) return null;
+  const t = text.trim().toLowerCase();
+  if (t === 'live' || t.includes('진행')) return 'live';
+  if (t === 'close' || t === 'closed' || t.includes('종료') || t.includes('마감'))
+    return 'close';
+  if (t === 'open' || t.includes('대기') || t.includes('예정')) return 'open';
+  return null;
+}
+
+function deriveCurrentRound(status: Record<Round, RoundLifecycle>): Round {
+  const order: Round[] = ['prelim', 'semi', 'final'];
+  return (
+    order.find((r) => status[r] === 'live') ??
+    order.find((r) => status[r] === 'open') ??
+    'prelim'
+  );
 }
 
 function extractIsoDate(text: string): string {
