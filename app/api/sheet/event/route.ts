@@ -55,13 +55,15 @@ function parseEvent(csv: string, values?: unknown[][]): Event | null {
   // 라운드별 "대회 상태" — 시트는 두 가지 키 형식을 사용한다:
   // (a) "예선 대회 상태" / "본선 대회 상태" / "결승 대회 상태"
   // (b) "예선" / "본선" / "결승"
+  // Fail-safe: 인식 못한 상태는 'prep'(잠금)으로 처리해 잘못 클릭/반영을 방지.
+  // 7개 드롭다운 값(prep/pairing/open/live/calculate/close/result)은 parseLifecycle 에서 모두 매핑한다.
   const roundStatus: Record<Round, RoundLifecycle> = {
     prelim:
-      parseLifecycle(map.get('예선 대회 상태') ?? map.get('예선')) ?? 'open',
+      parseLifecycle(map.get('예선 대회 상태') ?? map.get('예선')) ?? 'prep',
     semi:
-      parseLifecycle(map.get('본선 대회 상태') ?? map.get('본선')) ?? 'open',
+      parseLifecycle(map.get('본선 대회 상태') ?? map.get('본선')) ?? 'prep',
     final:
-      parseLifecycle(map.get('결승 대회 상태') ?? map.get('결승')) ?? 'open',
+      parseLifecycle(map.get('결승 대회 상태') ?? map.get('결승')) ?? 'prep',
   };
   // 명시적 "현재 라운드" 키가 있으면 우선, 없으면 첫 'live' 라운드를 현재로 본다.
   const currentRound =
@@ -72,7 +74,20 @@ function parseEvent(csv: string, values?: unknown[][]): Event | null {
 function parseLifecycle(text: string | undefined): RoundLifecycle | null {
   if (!text) return null;
   const t = text.trim().toLowerCase();
+  // 시트 드롭다운 7개 값 매칭. 한국어 동의어도 함께 수용해 운영자 자유 입력에 강건하다.
+  // 순서 주의: "calculate total" 이 "close"/"open" 보다 먼저 매칭되어야 한다.
   if (t === 'live' || t.includes('진행')) return 'live';
+  if (t === 'prep' || t.includes('준비')) return 'prep';
+  if (t === 'pairing' || t.includes('페어링') || t.includes('조편성') || t.includes('매칭'))
+    return 'pairing';
+  if (
+    t === 'calculate total' ||
+    t === 'calculate' ||
+    t.includes('집계') ||
+    t.includes('계산')
+  )
+    return 'calculate';
+  if (t === 'result' || t.includes('결과') || t.includes('발표')) return 'result';
   if (t === 'close' || t === 'closed' || t.includes('종료') || t.includes('마감'))
     return 'close';
   if (t === 'open' || t.includes('대기') || t.includes('예정')) return 'open';

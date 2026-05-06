@@ -12,6 +12,7 @@ import { useCompetition } from '../../hooks/useCompetition';
 import { useJudge } from '../../hooks/useJudge';
 import { AppsScriptError, getEvent } from '../../lib/apps-script';
 import {
+  isRoundInteractive,
   ROUND_LABEL,
   ROUND_LIFECYCLE_LABEL,
   ROUNDS,
@@ -163,20 +164,19 @@ function EventBody({ event }: { event: Event }) {
 
 function RoundEntry({ round, status }: { round: Round; status: RoundLifecycle }) {
   const label = ROUND_LIFECYCLE_LABEL[status];
-  // close 상태는 시트에서 라운드를 종료(잠금) 처리한 의미이므로 진입을 막는다.
-  const disabled = status === 'close';
+  // 진입은 OPEN(대기/시작 전) 또는 LIVE(진행 중)일 때만 허용.
+  // 그 외(prep/pairing/calculate/close/result)는 상태만 표출하고 클릭 차단.
+  const clickable = isRoundInteractive(status);
   const variant =
     status === 'live'
       ? 'jnj-btn jnj-btn-primary'
-      : status === 'open'
-        ? 'jnj-btn jnj-btn-secondary'
-        : 'jnj-btn jnj-btn-secondary';
+      : 'jnj-btn jnj-btn-secondary';
   const sharedStyle: React.CSSProperties = {
     width: '100%',
     padding: 'var(--jnj-space-4) var(--jnj-space-6)',
     justifyContent: 'space-between',
-    opacity: disabled ? 0.45 : 1,
-    cursor: disabled ? 'not-allowed' : undefined,
+    opacity: clickable ? 1 : 0.45,
+    cursor: clickable ? undefined : 'not-allowed',
   };
   const inner = (
     <>
@@ -193,7 +193,7 @@ function RoundEntry({ round, status }: { round: Round; status: RoundLifecycle })
       </span>
     </>
   );
-  if (disabled) {
+  if (!clickable) {
     return (
       <button
         type="button"
@@ -201,7 +201,7 @@ function RoundEntry({ round, status }: { round: Round; status: RoundLifecycle })
         style={sharedStyle}
         disabled
         aria-disabled="true"
-        title="시트에서 종료(Close) 처리된 라운드입니다."
+        title="OPEN 또는 LIVE 상태의 라운드만 진입할 수 있습니다."
       >
         {inner}
       </button>

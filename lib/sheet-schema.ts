@@ -22,14 +22,43 @@ export type Judge = {
 };
 
 // `1.대회정보` 시트의 라운드별 "대회 상태" 셀 값.
-// Live = 진행 중, Open = 대기/시작 전, Close = 종료.
-export type RoundLifecycle = 'live' | 'open' | 'close';
+// 시트 드롭다운: Prep / Pairing / Open / Live / Calculate Total / Close / Result.
+//   prep      = 준비 중 (라운드 데이터 세팅 전)
+//   pairing   = 조 편성 / 매칭 진행
+//   open      = 대기/시작 전 (심사위원 진입 가능, 반영은 보통 Live 부터)
+//   live      = 진행 중 (심사 활성)
+//   calculate = 집계 중 (입력 잠금)
+//   close     = 종료 (입력 잠금)
+//   result    = 결과 발표 (입력 잠금)
+export type RoundLifecycle =
+  | 'prep'
+  | 'pairing'
+  | 'open'
+  | 'live'
+  | 'calculate'
+  | 'close'
+  | 'result';
 
 export const ROUND_LIFECYCLE_LABEL: Record<RoundLifecycle, string> = {
-  live: 'LIVE',
+  prep: 'PREP',
+  pairing: 'PAIRING',
   open: 'OPEN',
+  live: 'LIVE',
+  calculate: 'CALCULATING',
   close: 'CLOSED',
+  result: 'RESULT',
 };
+
+// 심사위원이 진입/입력/반영 가능한 상태(화이트리스트).
+// 그 외 상태(prep/pairing/calculate/close/result)는 표출만 하고 인터랙션을 막는다.
+export const ROUND_LIFECYCLE_INTERACTIVE: ReadonlySet<RoundLifecycle> = new Set([
+  'open',
+  'live',
+]);
+
+export function isRoundInteractive(status: RoundLifecycle): boolean {
+  return ROUND_LIFECYCLE_INTERACTIVE.has(status);
+}
 
 export type Event = {
   name: string;

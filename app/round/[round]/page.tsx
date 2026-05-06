@@ -27,6 +27,7 @@ import {
 import {
   FINAL_SCORE_DEFAULT,
   FINAL_SCORE_MAX,
+  isRoundInteractive,
   ROUND_LABEL,
   ROUND_LIFECYCLE_LABEL,
   ROUND_STATUS_LABEL,
@@ -188,19 +189,20 @@ function LifecycleBanner({
   round: Round;
   lifecycle: RoundLifecycle;
 }) {
-  const closed = lifecycle === 'close';
-  const message = closed
-    ? `${ROUND_LABEL[round]} 라운드가 종료(${ROUND_LIFECYCLE_LABEL[lifecycle]})되어 입력/반영이 비활성화됩니다.`
-    : `${ROUND_LABEL[round]} 라운드가 아직 시작 전(${ROUND_LIFECYCLE_LABEL[lifecycle]})입니다. 운영자가 시트에서 'Live'로 변경하면 갱신 후 입력하세요.`;
+  // OPEN 만 "시작 전 안내"(중립 톤). 그 외 비-LIVE 상태는 입력 잠금(경고 톤).
+  const isOpen = lifecycle === 'open';
+  const message = isOpen
+    ? `${ROUND_LABEL[round]} 라운드가 아직 시작 전(${ROUND_LIFECYCLE_LABEL[lifecycle]})입니다. 운영자가 시트에서 'Live'로 변경하면 갱신 후 입력하세요.`
+    : `${ROUND_LABEL[round]} 라운드 상태가 ${ROUND_LIFECYCLE_LABEL[lifecycle]} 이므로 입력/반영이 비활성화됩니다.`;
   return (
     <div
       role="status"
       style={{
         padding: 'var(--jnj-space-3) var(--jnj-space-4)',
         borderRadius: 'var(--jnj-radius-md)',
-        border: `1px solid ${closed ? 'var(--jnj-red)' : 'var(--jnj-grey-300)'}`,
-        background: closed ? 'var(--jnj-red-50)' : 'var(--jnj-grey-50)',
-        color: closed ? 'var(--jnj-red)' : 'var(--jnj-text-primary)',
+        border: `1px solid ${isOpen ? 'var(--jnj-grey-300)' : 'var(--jnj-red)'}`,
+        background: isOpen ? 'var(--jnj-grey-50)' : 'var(--jnj-red-50)',
+        color: isOpen ? 'var(--jnj-text-primary)' : 'var(--jnj-red)',
         fontFamily: 'var(--jnj-font-text-medium)',
         fontSize: 'var(--jnj-size-small)',
       }}
@@ -283,7 +285,8 @@ function PassFailBody({
   push: ReturnType<typeof useToasts>['push'];
   dismiss: ReturnType<typeof useToasts>['dismiss'];
 }) {
-  const closed = lifecycle === 'close';
+  // 입력/반영은 OPEN/LIVE 에서만 허용. 그 외(prep/pairing/calculate/close/result)는 잠금.
+  const submitBlocked = !isRoundInteractive(lifecycle);
   const draftKey = `jnj.draft.${round}.${judgeId}`;
   const initial: PassFailDraft = useMemo(() => {
     const o: PassFailDraft = {};
@@ -354,8 +357,11 @@ function PassFailBody({
   }
 
   function handleSubmit() {
-    if (closed) {
-      push('error', '시트의 대회 상태가 종료(Close)로 설정되어 반영할 수 없습니다.');
+    if (submitBlocked) {
+      push(
+        'error',
+        `시트의 대회 상태가 ${ROUND_LIFECYCLE_LABEL[lifecycle]} 이므로 반영할 수 없습니다 (OPEN/LIVE 에서만 가능).`,
+      );
       return;
     }
     const entries: (PassFailEntry & { pass: boolean })[] = [];
@@ -486,7 +492,7 @@ function PassFailBody({
                 disabled={
                   isAbsent ||
                   submitting ||
-                  closed ||
+                  submitBlocked ||
                   // Once cap reached, freeze rows that are still OFF so judge
                   // can only flip OFF on already-ON rows to free up budget.
                   (capExhausted && draft[c.id] !== 'pass')
@@ -500,7 +506,7 @@ function PassFailBody({
 
       <SubmitFooter
         primaryLabel={
-          closed
+          submitBlocked
             ? `반영 불가 (${ROUND_LIFECYCLE_LABEL[lifecycle]})`
             : submitting
               ? 'Saving…'
@@ -508,8 +514,8 @@ function PassFailBody({
                 ? 'Saved'
                 : `반영 (VOTE ON ${voteOnCount}/${total})`
         }
-        onPrimary={locked || closed ? undefined : handleSubmit}
-        disabled={submitting || locked || closed}
+        onPrimary={locked || submitBlocked ? undefined : handleSubmit}
+        disabled={submitting || locked || submitBlocked}
         secondary={
           locked
             ? { label: '수정', onClick: () => setSubmitState({ kind: 'idle' }) }
@@ -548,7 +554,8 @@ function FinalBody({
   push: ReturnType<typeof useToasts>['push'];
   dismiss: ReturnType<typeof useToasts>['dismiss'];
 }) {
-  const closed = lifecycle === 'close';
+  // 결승 점수 입력/반영도 OPEN/LIVE 에서만 허용. 그 외 상태는 잠금.
+  const submitBlocked = !isRoundInteractive(lifecycle);
   const [submitState, setSubmitState] = useState<SubmitState>({ kind: 'idle' });
   const draftKey = `jnj.draft.final.${judgeId}`;
 
@@ -614,8 +621,11 @@ function FinalBody({
   const allValid = validCount === total && total > 0;
 
   function handleSubmit() {
-    if (closed) {
-      push('error', '시트의 대회 상태가 종료(Close)로 설정되어 반영할 수 없습니다.');
+    if (submitBlocked) {
+      push(
+        'error',
+        `시트의 대회 상태가 ${ROUND_LIFECYCLE_LABEL[lifecycle]} 이므로 반영할 수 없습니다 (OPEN/LIVE 에서만 가능).`,
+      );
       return;
     }
     const entries: FinalEntry[] = [];
@@ -781,7 +791,7 @@ function FinalBody({
                   label="기본기"
                   value={entry.basics}
                   invalid={entry.basics !== null && !isValidScore(entry.basics)}
-                  disabled={locked || submitting || closed}
+                  disabled={locked || submitting || submitBlocked}
                   onChange={(n) =>
                     setDraft((cur) => ({
                       ...cur,
@@ -795,7 +805,7 @@ function FinalBody({
                   invalid={
                     entry.connection !== null && !isValidScore(entry.connection)
                   }
-                  disabled={locked || submitting || closed}
+                  disabled={locked || submitting || submitBlocked}
                   onChange={(n) =>
                     setDraft((cur) => ({
                       ...cur,
@@ -809,7 +819,7 @@ function FinalBody({
                   invalid={
                     entry.musicality !== null && !isValidScore(entry.musicality)
                   }
-                  disabled={locked || submitting || closed}
+                  disabled={locked || submitting || submitBlocked}
                   onChange={(n) =>
                     setDraft((cur) => ({
                       ...cur,
@@ -825,7 +835,7 @@ function FinalBody({
 
       <SubmitFooter
         primaryLabel={
-          closed
+          submitBlocked
             ? `반영 불가 (${ROUND_LIFECYCLE_LABEL[lifecycle]})`
             : submitting
               ? 'Saving…'
@@ -833,8 +843,8 @@ function FinalBody({
                 ? 'Saved'
                 : `반영 (${validCount}/${total})`
         }
-        onPrimary={locked || closed ? undefined : handleSubmit}
-        disabled={submitting || closed || (!allValid && !locked)}
+        onPrimary={locked || submitBlocked ? undefined : handleSubmit}
+        disabled={submitting || submitBlocked || (!allValid && !locked)}
         secondary={
           locked
             ? { label: '수정', onClick: () => setSubmitState({ kind: 'idle' }) }
